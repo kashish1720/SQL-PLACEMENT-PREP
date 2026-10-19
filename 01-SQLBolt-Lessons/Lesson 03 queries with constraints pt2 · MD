@@ -1,0 +1,308 @@
+# SQL Lesson 3: Queries with constraints (Pt. 2)
+
+## 1. Problem kya hai?
+
+Lesson 2 mein numbers par filter lagana seekha. Ab **text (string)** par filter chahiye:
+
+- "Jin students ka naam **R se shuru** hota hai"
+- "Jin movies ke naam mein **Toy Story** hai"
+- "Jinka email **@gmail.com par khatam** hota hai"
+
+Isme poora text match nahi karna, sirf **pattern** match karna hai. Iske liye **`LIKE`** aur **wildcards** (`%`, `_`) hote hain.
+
+**Real-life example:** Phone ke contacts mein "Ra" type karo aur saare Ra... wale naam aa jaate hain. Yahi pattern matching hai.
+
+---
+
+## 2. Text operators
+
+| Operator | Matlab | Example |
+|---|---|---|
+| `=` | Exact string match | `name = 'Rahul'` |
+| `!=` ya `<>` | Exact match nahi | `name != 'Rahul'` |
+| `LIKE` | Pattern match | `name LIKE 'R%'` |
+| `NOT LIKE` | Pattern match nahi | `name NOT LIKE 'R%'` |
+| `%` | **Zero ya zyada** characters (sirf LIKE ke saath) | `'%at%'` |
+| `_` | **Exactly ek** character (sirf LIKE ke saath) | `'AN_'` |
+| `IN (...)` | List mein se koi ek string | `dept IN ('CSE', 'ECE')` |
+| `NOT IN (...)` | List mein se koi nahi | `dept NOT IN ('ME', 'CE')` |
+
+---
+
+## 3. Wildcards: `%` aur `_`
+
+| Wildcard | Kitne characters | Yaad rakhne ka tareeka |
+|---|---|---|
+| `%` | **0, 1 ya kitne bhi** | % = "kuch bhi, kitna bhi" |
+| `_` | **Bilkul 1** | _ = "ek khaali jagah" |
+
+**`%AT%`** matches: `AT`, `ATTIC`, `CAT`, `BATS` (`AT` kahin bhi ho).
+**`AN_`** matches: `AND` ✅ lekin `AN` ❌ (kyunki `_` ke liye ek character chahiye) aur `ANT` ✅ bhi (3 letters).
+
+### Position ke hisaab se pattern
+
+| Pattern | Matlab | Example match |
+|---|---|---|
+| `'R%'` | **R se shuru** | Rahul, Rohan |
+| `'%a'` | **a par khatam** | Priya, Neha |
+| `'%an%'` | **an kahin bhi** | Rohan, Karan |
+| `'_a%'` | **Doosra letter a** | Rahul, Karan |
+| `'A___'` | **A + exactly 3 aur letters** (total 4) | Amit |
+
+---
+
+## 4. Examples
+
+Table `students`:
+
+| id | name | dept |
+|---|---|---|
+| 1 | Rahul | CSE |
+| 2 | Rohan | ECE |
+| 3 | Priya | CSE |
+| 4 | Amit | ME |
+| 5 | Ankita | ECE |
+| 6 | Neha | CSE |
+| 7 | Karan | ME |
+
+### A. Exact match
+
+```sql
+SELECT name FROM students WHERE dept = 'CSE';
+```
+Result: Rahul, Priya, Neha.
+
+### B. R se shuru
+
+```sql
+SELECT name FROM students WHERE name LIKE 'R%';
+```
+Result: **Rahul, Rohan**.
+
+### C. a par khatam
+
+```sql
+SELECT name FROM students WHERE name LIKE '%a';
+```
+Result: **Priya, Ankita, Neha**.
+
+### D. "an" kahin bhi
+
+```sql
+SELECT name FROM students WHERE name LIKE '%an%';
+```
+Result: **Rohan, Ankita, Karan**. (`Ankita` mein `An` hai, aur LIKE case-insensitive chalta hai.)
+
+### E. Doosra letter 'a'
+
+```sql
+SELECT name FROM students WHERE name LIKE '_a%';
+```
+Result: **Rahul, Karan**.
+
+### F. Exactly 4 letters, A se shuru
+
+```sql
+SELECT name FROM students WHERE name LIKE 'A___';
+```
+Result: **Amit**. (Ankita 6 letters ka hai, isliye nahi aaya.)
+
+### G. NOT LIKE
+
+```sql
+SELECT name FROM students WHERE name NOT LIKE 'A%';
+```
+Result: Rahul, Rohan, Priya, Neha, Karan.
+
+### H. IN aur NOT IN (text ke saath)
+
+```sql
+SELECT name FROM students WHERE dept IN ('CSE', 'ECE');
+```
+Result: Rahul, Rohan, Priya, Ankita, Neha.
+
+```sql
+SELECT name FROM students WHERE dept NOT IN ('CSE', 'ECE');
+```
+Result: Amit, Karan.
+
+---
+
+## 5. Pattern kaise banayein (step by step)
+
+1. Dekho **kahan** se match karna hai: shuru, ant, ya beech?
+   - Shuru → `'text%'`
+   - Ant → `'%text'`
+   - Kahin bhi → `'%text%'`
+2. Kitne characters pata hain? **Exact count** pata ho toh `_`, warna `%`.
+3. Text hamesha **single quotes** mein.
+
+---
+
+## 6. 🚨 Important: Case sensitivity (database ke hisaab se alag)
+
+SQLBolt ke hisaab se `=` case-sensitive aur `LIKE` case-insensitive hai. **Lekin yeh har database mein alag hota hai:**
+
+| Database | `=` | `LIKE` |
+|---|---|---|
+| **SQLite** (SQLBolt yahi use karta hai) | Case-sensitive | Case-insensitive (English letters ke liye) |
+| **MySQL** (default) | **Case-insensitive** | **Case-insensitive** |
+| **SQL Server** (default) | **Case-insensitive** | **Case-insensitive** |
+| **PostgreSQL** | Case-sensitive | Case-sensitive (`ILIKE` insensitive hai) |
+
+Aapne MySQL aur SQL Server use kiye hain, toh wahan `name = 'rahul'` bhi `Rahul` ko match kar dega (default collation ki wajah se). Yeh **collation** setting par depend karta hai.
+
+**Interview mein safe jawab:** *"Case sensitivity database aur collation par depend karti hai."*
+
+---
+
+## 7. Common mistakes 🚨
+
+| Galti | Galat | Sahi |
+|---|---|---|
+| Wildcard ke liye `=` use karna | `name = 'R%'` ❌ (pattern nahi chalta, literal `R%` dhoondta hai) | `name LIKE 'R%'` ✅ |
+| Quotes bhoolna | `name LIKE R%` ❌ | `name LIKE 'R%'` ✅ |
+| Double quotes | `name = "Rahul"` (kuch DBs mein error ya galat arth) | `name = 'Rahul'` (single quotes standard hain) |
+| `_` aur `%` mix up | `'A_'` se "A se shuru" socha ❌ (sirf 2-letter wale) | `'A%'` |
+| `LIKE` mein wildcard na lagana | `LIKE 'Rahul'` bas exact match hai | Zaroorat ho toh `%` lagao |
+
+---
+
+## 8. Interview / MCQ traps
+
+1. **`%` = 0 ya zyada, `_` = exactly 1.** Yeh sabse common MCQ hai. `'AN_'` mein `AN` match nahi hota.
+2. **`=` aur `LIKE` mein farak:** `=` exact comparison, `LIKE` pattern. Wildcards sirf `LIKE` ke saath kaam karte hain.
+3. **Performance:** `LIKE 'abc%'` (shuru se match) aksar **index** use kar paata hai. `LIKE '%abc'` ya `'%abc%'` (shuru mein wildcard) mein index kaam nahi aata, aur wo slow ho sakta hai. Interview mein bolo toh depth dikhegi.
+4. **Special character match karna ho:** agar `%` ya `_` ko hi dhoondhna hai, toh `ESCAPE` use karte hain. (Abhi bas pata rahe.)
+5. **Bahut bade text search** ke liye `LIKE` sahi nahi hota. SQLBolt bhi kehta hai ki dedicated tools (Apache Lucene, Elasticsearch jaise) behtar hain.
+6. `NOT LIKE` aur `NOT IN` NULL values ko pakad nahi paate (Lesson 8 mein detail).
+7. SQL Server mein `LIKE` ke saath `[ ]` bhi hota hai (jaise `'[RK]%'`, R ya K se shuru). Yeh SQL Server ka extra feature hai.
+
+---
+
+## 9. SQLBolt Exercise 3: tareeka (movies table)
+
+Is lesson mein table mein ek naya row bhi hai: `87 | WALL-G | Brenda Chapman | 2042 | 97`.
+
+| Task | Soch |
+|---|---|
+| Saari Toy Story movies | `title` ke shuru mein "Toy Story" hai, aage kuch bhi ho sakta hai (2, 3 wagairah). Kaunsa wildcard? |
+| John Lasseter ki saari movies | `director` par exact text match |
+| Jo John Lasseter ne nahi banayi (movie aur director) | Upar wale ka ulta. Columns: `title`, `director` |
+| Saari WALL-* movies | `WALL-` ke baad **ek** character. `WALL-E` aur `WALL-G` dono aani chahiye |
+
+**Pehle khud likhke SQLBolt mein try karo.**
+
+---
+
+## 10. Quick revision
+
+1. `=` exact, `LIKE` pattern.
+2. `%` = 0 ya zyada characters, `_` = exactly 1 character.
+3. `'R%'` shuru, `'%a'` ant, `'%an%'` beech.
+4. Text hamesha **single quotes** mein.
+5. Case sensitivity DB aur collation par depend karti hai.
+6. `'abc%'` index-friendly, `'%abc'` nahi.
+
+---
+
+## 11. Quick quiz
+
+**Q1.** Upar wale `students` table par is query ka output kya hoga?
+```sql
+SELECT name FROM students WHERE name LIKE 'R%';
+```
+
+**Q2.** Un students ke naam dikhao jinka naam **'a' par khatam** hota hai. Query likho.
+
+**Q3.** `%` aur `_` mein farak ek line mein batao.
+
+**Q4.** `LIKE 'AN_'` kaunsa match karega: `AND`, `AN`, `ANT`, `ANGEL`?
+
+**Q5.** Query likho: wo students jinka naam **4 letters** ka hai aur **A se shuru** hota hai.
+
+**Q6.** `WHERE name = 'R%'` kyun galat tareeka hai "R se shuru" dhoondhne ke liye?
+
+---
+
+# ✍️ My Practice: SQLBolt Exercise 3 (mistakes aur improvements)
+
+> Is lesson ke table mein ek extra row hai: `87 | WALL-G | Brenda Chapman | 2042 | 97`
+
+## Task-wise: meri query vs improved query
+
+| # | Task | Meri query | Result | Improved |
+|---|---|---|---|---|
+| 1 | Saari Toy Story movies | `SELECT * FROM movies WHERE Title LIKE '%Toy Story%';` | ✅ Sahi | `WHERE title LIKE 'Toy Story%'` (shuru se match, zyada precise) |
+| 2 | John Lasseter ki movies | `SELECT * FROM movies WHERE Director = 'John Lasseter';` | ✅ Sahi | Wahi |
+| 3 | Jo Lasseter ne nahi banayi (movie + director) | `SELECT Title, Director FROM movies WHERE Director != 'John Lasseter';` | ✅ Sahi | Wahi |
+| 4 | Saari WALL-* movies | `SELECT * FROM movies WHERE Title LIKE 'WALL-_';` | ✅ Sahi | Wahi |
+
+**Score: 4/4 ✅**
+
+## Results
+
+| Task | Rows | Movies |
+|---|---|---|
+| 1 | 3 | Toy Story, Toy Story 2, Toy Story 3 |
+| 2 | 5 | Toy Story, A Bug's Life, Toy Story 2, Cars, Cars 2 |
+| 3 | 10 | Monsters Inc, Finding Nemo, The Incredibles, Ratatouille, WALL-E, Up, Toy Story 3, Brave, Monsters University, WALL-G |
+| 4 | 2 | WALL-E, WALL-G |
+
+## Sabak aur improvements
+
+### Task 1: `'%Toy Story%'` vs `'Toy Story%'`
+
+| Pattern | Matlab | Risk |
+|---|---|---|
+| `'Toy Story%'` | "Toy Story" **se shuru** | Sirf wahi jo shuru se match ho |
+| `'%Toy Story%'` | "Toy Story" **kahin bhi** | "My Toy Story" jaisa naam bhi pakad lega |
+
+Is table mein dono ka result same hai. Lekin shuru se match ho toh `'abc%'` use karo, kyunki wo **index-friendly** hota hai, aur `'%abc'` nahi.
+
+### Task 4: `_` vs `%`
+- `'WALL-_'` mein `_` **exactly ek** character leta hai, isliye `WALL-E` aur `WALL-G` aaye.
+- `'WALL-%'` likhte toh `WALL-E-Extra` jaisa lamba naam bhi pakad leta.
+
+### Habit: keywords CAPITAL mein
+`Title Like`, `where` jaise alag-alag case se query chalti hai, lekin convention hai ki **keywords CAPITAL** (`SELECT`, `FROM`, `WHERE`, `LIKE`) aur column/table ke naam jaise hain waise. Readable hoti hai.
+
+## Quiz mein meri galtiyan
+
+| Q | Mera jawab | Check |
+|---|---|---|
+| 1. `name LIKE 'R%'` ka output | Rahul, Rohan | ✅ |
+| 2. 'a' par khatam hone wale naam | `WHERE name LIKE '%a'` | ✅ Output: Priya, Ankita, Neha |
+| 3. `%` aur `_` mein farak | "`%` kitne bhi characters, `-` sirf 1" | ⚠️ Concept sahi, 2 sudhaar neeche |
+| 4. `LIKE 'AN_'` kaunsa match karega | AND, ANT | ✅ (AN aur ANGEL nahi) |
+| 5. Exactly 5 letters, 'n' par khatam | `WHERE name LIKE '____n'` | ✅ Output: Rohan, Karan |
+
+### Q3 ke 2 sudhaar
+1. **Symbol `_` (underscore) hai, `-` (hyphen) nahi.** `'AN-'` likhoge toh SQL `-` ko normal character samjhega, wildcard nahi.
+2. **`%` zero bhi ho sakta hai.** "Zero ya zyada" yaad rakho. `'R%'` mein sirf `R` naam bhi match hota hai.
+
+| | `%` | `_` |
+|---|---|---|
+| Characters | **0 ya zyada** | **Exactly 1** |
+| `'AN%'` | AN, AND, ANT, ANGEL ✅ | |
+| `'AN_'` | | AND, ANT ✅. AN ❌, ANGEL ❌ |
+
+### Q5 ka alternate tareeka
+
+```sql
+-- Meri query (underscores ginne padte hain)
+SELECT name FROM students WHERE name LIKE '____n';
+
+-- MySQL
+SELECT name FROM students WHERE name LIKE '%n' AND LENGTH(name) = 5;
+
+-- SQL Server (LENGTH ki jagah LEN)
+SELECT name FROM students WHERE name LIKE '%n' AND LEN(name) = 5;
+```
+
+**MySQL mein `LENGTH`, SQL Server mein `LEN`.** Lamba naam ho toh `LENGTH` wala tareeka zyada readable hai.
+
+## Meri aadatein
+1. Shuru se match ho toh `'abc%'` use karo.
+2. `_` underscore hai, hyphen nahi.
+3. Keywords CAPITAL mein likho.
