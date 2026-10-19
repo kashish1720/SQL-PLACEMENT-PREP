@@ -306,3 +306,7 @@ SELECT name FROM students LIMIT 3 ORDER BY marks DESC;
 ## ✍️ My Practice: SQLBolt Exercise 4
 
 *(Exercise solve karne ke baad meri queries, mistakes aur improved solutions yahan add karunga.)*
+Apni 3 aadatein sudharni hain
+Jo columns task mein maange hain, sirf wahi SELECT karo.
+DISTINCT tabhi lagao jab duplicates sach mein aa sakte hon, aur uske saath extra column mat jodo.
+ORDER BY mein jis column se sort karna hai wahi likho, extra column mat daalo.
