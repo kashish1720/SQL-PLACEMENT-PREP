@@ -274,3 +274,78 @@ WHERE (dept = 'CSE' OR dept = 'ECE') AND marks >= 80
 ```
 
 **Q6.** `WHERE marks NOT BETWEEN 60 AND 80` ko `>` / `<` aur `OR` se likho.
+
+---
+
+# ✍️ My Practice: SQLBolt Exercise 2 (mistakes aur improvements)
+
+## Task-wise: meri query vs sahi query
+
+| # | Task | Meri query | Result | Improved / sahi query |
+|---|---|---|---|---|
+| 1 | Row id 6 wali movie | `SELECT * FROM Movies WHERE is = 6;` | ❌ Typo | `SELECT * FROM movies WHERE id = 6;` |
+| 2 | 2000 se 2010 ke beech | `SELECT * FROM Movies WHERE Year BETWEEN 2000 AND 2010;` | ✅ Sahi | Wahi |
+| 3 | 2000 se 2010 ke beech **nahi** | `SELECT * FROM Movies WHERE Year NOT BETWEEN 2000 AND 2010;` | ✅ Sahi | Wahi |
+| 4 | Pehli 5 movies aur unka year | `SELECT * FROM Movies WHERE id IN (1,2,3,4,5);` | ⚠️ Logic sahi, columns galat | `SELECT title, year FROM movies WHERE id <= 5;` |
+
+## Mistakes aur unka sabak
+
+### Task 1: `is` ki jagah `id`
+- Column ka naam `id` hai, maine `is` likh diya.
+- **`IS` SQL ka keyword hai** (jaise `IS NULL`), isliye syntax error aata hai.
+- **Sabak:** Query chalane se pehle column ka spelling table se milao.
+
+### Task 2 aur 3: sahi, lekin yaad rakho
+- `BETWEEN` mein **dono ends shamil** hote hain, to **2010 ki Toy Story 3 Task 2 mein aati hai.**
+
+| Task | Rows | Movies |
+|---|---|---|
+| 2 (2000-2010) | 8 | Monsters Inc, Finding Nemo, The Incredibles, Cars, Ratatouille, WALL-E, Up, Toy Story 3 |
+| 3 (bahar) | 6 | Toy Story, A Bug's Life, Toy Story 2, Cars 2, Brave, Monsters University |
+
+- 8 + 6 = 14 (table ki saari movies). Isse check kar sakte ho ki dono queries ek doosre ka ulta hain.
+
+### Task 4: task ke columns dhyan se padho
+- Task mein likha tha **"first 5 movies aur unka release year"**, yaani sirf `title` aur `year`. Maine `*` likh diya.
+- `SELECT *` tab lagao jab "saari information" bola ho. SQLBolt output ke columns bhi check karta hai.
+- **Better tareeka:** 1000 rows ho toh 1000 ids likhna bekaar hai. In mein se koi bhi likh sakte ho:
+
+```sql
+WHERE id <= 5
+-- ya
+WHERE id BETWEEN 1 AND 5
+```
+
+## Quiz mein meri galtiyan
+
+| Q | Mera jawab | Check |
+|---|---|---|
+| 1. 60 se zyada marks | `WHERE marks > 60` | ✅ Output: Rahul, Priya, Amit (Neha ke marks 60 hain, "zyada" nahi) |
+| 2. BETWEEN mein ends aate hain? | Haan | ✅ |
+| 3. `IN (40, 70, 90)` ko OR se likho | `marks = '40' OR marks = '70' OR marks = '90'` | ⚠️ Logic sahi, **numbers par quotes nahi lagte** |
+| 4. ECE aur marks > 50 | Priya | ✅ (Karan ECE hai lekin 40 marks) |
+
+### Q3 ka sabak: quotes kab lagate hain
+
+```sql
+-- Meri query (chal jaayegi, lekin aadat galat)
+WHERE marks = '40' OR marks = '70' OR marks = '90'
+
+-- Sahi
+WHERE marks = 40 OR marks = 70 OR marks = 90
+
+-- Sabse achha
+WHERE marks IN (40, 70, 90)
+```
+
+| Type | Quotes? | Example |
+|---|---|---|
+| Number (INT, FLOAT) | ❌ Nahi | `marks = 40` |
+| Text (VARCHAR) | ✅ Single quotes | `dept = 'CSE'` |
+
+`'40'` ek **text** hai. MySQL aur SQL Server ise khud number mein badal dete hain (**implicit conversion**), isliye query chal gayi. Lekin database ko extra kaam karna padta hai aur kabhi galat result ya slow query ban sakti hai.
+
+## Meri 3 aadatein jo sudharni hain
+1. Query likhne se pehle **task dhyan se padho**: kaun se columns maange hain.
+2. Column aur table ka **spelling** check karo.
+3. **Numbers par quotes nahi**, text par single quotes.
